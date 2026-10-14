@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f0f12">
+  <meta name="description" content="Simple, fast, and free voice translation web app powered by Web Speech API and MyMemory.">
+  <title>Voice Translator</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PWA Manifest & App Styles -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- App Container (Mobile-first centered column, max-width 420px) -->
+  <div class="app-shell">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <h1 class="brand-title">Voice Translator</h1>
+      </div>
+      <span class="status-badge" id="app-status">Ready</span>
+    </header>
+
+    <!-- Main Content Views -->
+    <main class="app-main">
+
+      <!-- ==================== VIEW 1: VOICE (MAIN) ==================== -->
+      <section class="tab-view active" id="view-voice">
+        
+        <!-- Language Selectors & Swap -->
+        <div class="lang-bar">
+          <div class="select-wrapper">
+            <label for="from-lang" class="sr-only">From language</label>
+            <select id="from-lang" class="lang-select" aria-label="Translate from language">
+              <!-- Options populated dynamically by app.js -->
+            </select>
+          </div>
+
+          <button id="swap-lang-btn" class="icon-btn swap-btn" title="Swap languages" aria-label="Swap source and target languages">
+            <!-- Inline SVG: Swap Icon -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>
+          </button>
+
+          <div class="select-wrapper">
+            <label for="to-lang" class="sr-only">To language</label>
+            <select id="to-lang" class="lang-select" aria-label="Translate to language">
+              <!-- Options populated dynamically by app.js -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Translation Text Cards -->
+        <div class="cards-container">
+          
+          <!-- Source Card -->
+          <div class="card source-card">
+            <div class="card-header">
+              <span class="card-label" id="source-lang-label">English</span>
+              <button id="clear-source-btn" class="card-action-btn" title="Clear text" aria-label="Clear source text">
+                <!-- Inline SVG: Clear / X icon -->
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <textarea 
+              id="source-text" 
+              class="card-textarea source-textarea" 
+              placeholder="Tap the mic and speak, or type here..." 
+              rows="3" 
+              spellcheck="false"
+              aria-label="Source text"></textarea>
+          </div>
+
+          <!-- Translation Card -->
+          <div class="card translation-card">
+            <div class="card-header">
+              <span class="card-label" id="to-lang-label">Spanish</span>
+              <div class="loading-dots" id="translating-indicator" aria-hidden="true" title="Translating...">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <textarea 
+              id="translation-text" 
+              class="card-textarea translation-textarea" 
+              placeholder="Translation will appear here..." 
+              rows="3" 
+              readonly
+              aria-label="Translated text"></textarea>
+            
+            <div class="card-actions">
+              <!-- Speak Button -->
+              <button id="speak-btn" class="card-action-pill" title="Listen to pronunciation" aria-label="Speak translation">
+                <!-- Inline SVG: Speaker icon -->
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+                <span>Speak</span>
+              </button>
+
+              <!-- Copy Button -->
+              <button id="copy-btn" class="card-action-pill" title="Copy translation" aria-label="Copy translation to clipboard">
+                <!-- Inline SVG: Copy icon -->
+                <svg id="copy-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span id="copy-btn-text">Copy</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Waveform & Mic Controls -->
+        <div class="voice-controls-section">
+          <!-- Waveform Canvas -->
+          <div class="waveform-container">
+            <canvas id="waveform-canvas" width="360" height="48" aria-label="Audio waveform visualization"></canvas>
+          </div>
+
+          <!-- Prompt / Status Text -->
+          <p class="mic-status-text" id="mic-status-label">Tap microphone to speak</p>
+
+          <!-- Large Round Mic Button (80px) -->
+          <div class="mic-wrapper">
+            <button id="mic-btn" class="mic-button" aria-label="Start recording speech" title="Tap to start recording">
+              <!-- Inline SVG: Microphone Icon -->
+              <svg id="mic-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== VIEW 2: HISTORY ==================== -->
+      <section class="tab-view" id="view-history">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Recent History</h2>
+            <p class="view-subtitle">Last 5 translations saved locally</p>
+          </div>
+          <button id="clear-history-btn" class="clear-all-btn" title="Clear all history">Clear</button>
+        </div>
+
+        <div id="history-list" class="history-list">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: LANGUAGE ==================== -->
+      <section class="tab-view" id="view-language">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Language Settings</h2>
+            <p class="view-subtitle">Select language pairs or learn more</p>
+          </div>
+        </div>
+
+        <div class="settings-content">
+          <div class="settings-card">
+            <h3 class="settings-card-title">Quick Preset Pairs</h3>
+            <p class="settings-card-desc">Tap any preset pair to quickly configure the translator:</p>
+            <div class="preset-grid" id="preset-pairs-list">
+              <!-- Populated by app.js -->
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3 class="settings-card-title">Supported Languages</h3>
+            <p class="settings-card-desc">12 core global languages supported with Speech-to-Text, MyMemory Translation, and Text-to-Speech synthesis.</p>
+            <ul class="language-guide-list" id="language-guide-list">
+              <!-- Populated by app.js -->
+            </ul>
+          </div>
+
+          <div class="settings-card tip-card">
+            <h3 class="settings-card-title">Microphone Tip</h3>
+            <p class="settings-card-desc">
+              For best voice recognition, use Google Chrome on desktop or Android and ensure your microphone permission is set to <strong>Allow</strong>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Voice, History, Language) -->
+    <nav class="bottom-nav" aria-label="Bottom Navigation">
+      <button class="nav-item active" data-tab="voice" aria-label="Voice tab">
+        <!-- Inline SVG: Mic icon -->
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+        </svg>
+        <span>Voice</span>
+      </button>
+
+      <button class="nav-item" data-tab="history" aria-label="History tab">
+        <!-- Inline SVG: History / Clock icon -->
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>History</span>
+      </button>
+
+      <button class="nav-item" data-tab="language" aria-label="Language tab">
+        <!-- Inline SVG: Globe icon -->
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <span>Language</span>
+      </button>
+    </nav>
+
+    <!-- Floating Toast Notification -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

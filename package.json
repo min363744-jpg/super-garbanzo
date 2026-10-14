@@ -1,0 +1,18 @@
+{
+  "name": "voice-translator-app",
+  "version": "1.0.0",
+  "description": "Simple Voice Translation web app using Web Speech API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "voice",
+    "translator",
+    "web-speech-api",
+    "pwa"
+  ],
+  "author": "",
+  "license": "ISC"
+}
